@@ -1,4 +1,6 @@
 use crate::objects::{HandleReturn, Object, ObjectCommand};
+use crossterm::{cursor, execute};
+use std::io::{self};
 
 #[derive(Debug, Clone)]
 pub struct TextObject {
@@ -19,7 +21,26 @@ impl TextObject {
 
 impl Object for TextObject {
     fn display(&self) {
-        println!("{}: {:?}", self.content, self.size);
+        let text_bits: Vec<&str> = self
+            .content
+            .as_bytes()
+            .chunks(self.size.0)
+            .map(|chunk| std::str::from_utf8(chunk).unwrap())
+            .collect();
+
+        for i in 0..self.size.1 {
+            execute!(
+                io::stdout(),
+                cursor::MoveTo(self.position.0 as u16, self.position.1 as u16 + i as u16),
+            )
+            .unwrap();
+
+            if i < text_bits.len() {
+                print!("{}", text_bits[i]);
+            } else {
+                print!(" ");
+            }
+        }
     }
 
     fn handle(&mut self, command: ObjectCommand) -> Result<HandleReturn, ()> {
@@ -28,6 +49,12 @@ impl Object for TextObject {
                 self.size = (width, height);
                 Ok(HandleReturn::None)
             }
+            ObjectCommand::GetSize() => Ok(HandleReturn::Size(self.size)),
+            ObjectCommand::SetPosition((x, y)) => {
+                self.position = (x, y);
+                Ok(HandleReturn::None)
+            }
+            ObjectCommand::GetPosition() => Ok(HandleReturn::Position(self.position)),
             ObjectCommand::SetText(new_text) => {
                 self.content = new_text;
                 Ok(HandleReturn::None)

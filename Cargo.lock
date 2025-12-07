@@ -270,6 +270,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "tuimbtest"
+version = "0.1.0"
+dependencies = [
+ "tuimb",
+]
+
+[[package]]
 name = "unicode-ident"
 version = "1.0.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
