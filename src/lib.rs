@@ -1,12 +1,12 @@
 pub mod objects;
 use crate::objects::container::*;
-use crate::objects::text::*;
 use crate::objects::*;
 
 use term_size::dimensions;
 
 pub mod terminal;
 
+use crossterm::cursor::{Hide, Show};
 use crossterm::execute;
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, Clear, EnterAlternateScreen, LeaveAlternateScreen,
@@ -45,6 +45,7 @@ impl TuiHandler {
 
     pub fn run(&mut self) {
         execute!(std::io::stdout(), crossterm::event::EnableMouseCapture).unwrap();
+        execute!(io::stdout(), Hide).unwrap();
         execute!(io::stdout(), EnterAlternateScreen).unwrap();
         enable_raw_mode().unwrap();
 
@@ -85,5 +86,7 @@ impl TuiHandler {
     pub fn exit(&mut self) {
         disable_raw_mode().unwrap();
         execute!(io::stdout(), LeaveAlternateScreen).unwrap();
+        execute!(io::stdout(), Show).unwrap();
+        execute!(std::io::stdout(), crossterm::event::DisableMouseCapture).unwrap();
     }
 }

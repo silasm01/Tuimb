@@ -2,6 +2,9 @@ pub mod text;
 // use text::TextObject;
 pub mod container;
 // use container::ContainerObject;
+pub mod button;
+
+use super::TuiHandler;
 
 #[derive(Debug, Clone)]
 pub struct Handle {
@@ -60,4 +63,5 @@ pub enum ObjectCommand {
     GetSize(),
     GetObjects(Box<dyn FnOnce(&Vec<Box<dyn Object>>)>),
     SetIndexes(Vec<usize>),
+    SetSelected(bool),
 }

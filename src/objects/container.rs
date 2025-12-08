@@ -2,9 +2,11 @@ use crate::objects::{Handle, HandleReturn, Object, ObjectCommand};
 use crossterm::{cursor, execute};
 use std::io::{self};
 
+#[derive(PartialEq, Clone, Copy)]
 pub enum FlowDirection {
     Row,
     Column,
+    Toggle,
 }
 
 pub struct ContainerObject {
@@ -40,13 +42,17 @@ impl ContainerObject {
 
         let spacing_sum = self.spacing.iter().sum::<usize>();
 
+        let length = self.content.len();
+
         for (i, obj) in self.content.iter_mut().enumerate() {
             let spacing = self.spacing[i] as f32 / spacing_sum as f32;
 
             let border_offset = if self.border { 1 } else { 0 };
 
             let mut size = match self.flow {
-                FlowDirection::Row => ((spacing * self.size.0 as f32) as usize, self.size.1),
+                FlowDirection::Row | FlowDirection::Toggle => {
+                    ((spacing * self.size.0 as f32) as usize, self.size.1)
+                }
                 FlowDirection::Column => (self.size.0, ((self.size.1 as f32) * spacing) as usize),
             };
 
@@ -55,8 +61,15 @@ impl ContainerObject {
                 size.1.saturating_sub(border_offset * 2),
             );
 
+            if length > 1 && i != length - 1 && self.border {
+                match self.flow {
+                    FlowDirection::Row | FlowDirection::Toggle => size.0 = size.0 + 1,
+                    FlowDirection::Column => size.1 = size.1 + 1,
+                }
+            }
+
             let mut position = match self.flow {
-                FlowDirection::Row => {
+                FlowDirection::Row | FlowDirection::Toggle => {
                     let x_offset: usize = self.spacing.iter().take(i).sum();
                     (
                         self.position.0
@@ -76,6 +89,10 @@ impl ContainerObject {
 
             position = (position.0 + border_offset, position.1 + border_offset);
 
+            if position.1 + size.1 + 1 + border_offset == self.position.1 + self.size.1 {
+                size.1 = size.1 + 1;
+            }
+
             obj.handle(ObjectCommand::SetSize(size)).unwrap();
             obj.handle(ObjectCommand::SetPosition(position)).unwrap();
 
@@ -91,10 +108,8 @@ impl ContainerObject {
     pub fn add_object(&mut self, obj: Box<dyn Object>) {
         self.content.push(obj);
     }
-}
 
-impl Object for ContainerObject {
-    fn display(&self) {
+    fn display_border(&self) {
         if self.border {
             let (x, y) = self.position;
             let (width, height) = self.size;
@@ -131,6 +146,12 @@ impl Object for ContainerObject {
             }
             print!("╯");
         }
+    }
+}
+
+impl Object for ContainerObject {
+    fn display(&self) {
+        self.display_border();
 
         for obj in &self.content {
             obj.display();
@@ -154,7 +175,15 @@ impl Object for ContainerObject {
                 Ok(HandleReturn::None)
             }
             ObjectCommand::SetFlow(flow) => {
-                self.flow = flow;
+                if flow == FlowDirection::Toggle {
+                    self.flow = match self.flow {
+                        FlowDirection::Row => FlowDirection::Column,
+                        FlowDirection::Column => FlowDirection::Row,
+                        FlowDirection::Toggle => FlowDirection::Row, // Default case
+                    };
+                } else {
+                    self.flow = flow;
+                }
                 Ok(HandleReturn::None)
             }
             ObjectCommand::SetBorder(border) => {
