@@ -10,7 +10,7 @@ use crossterm::event::{self, Event, KeyCode};
 
 impl TuiHandler {
     pub fn handle_term_events(&mut self) {
-        if event::poll(std::time::Duration::from_millis(100)).unwrap() {
+        if event::poll(std::time::Duration::from_millis(500)).unwrap() {
             let event = event::read().unwrap();
             match event {
                 Event::Resize(width, height) => {
@@ -24,18 +24,20 @@ impl TuiHandler {
                     self.changed = true;
                 }
                 Event::Key(key_event) => {
-                    let mut triggers = std::mem::take(&mut self.triggers);
-                    for (trigger, callback) in &mut triggers {
-                        if let Trigger::KeyPress(c) = trigger {
-                            if let KeyCode::Char(pressed_char) = key_event.code {
-                                if pressed_char == *c {
-                                    callback(self);
-                                    self.changed = true;
+                    if key_event.kind == crossterm::event::KeyEventKind::Release {
+                        let mut triggers = std::mem::take(&mut self.triggers);
+                        for (trigger, callback) in &mut triggers {
+                            if let Trigger::KeyPress(c) = trigger {
+                                if let KeyCode::Char(pressed_char) = key_event.code {
+                                    if pressed_char == *c {
+                                        callback(self);
+                                        self.changed = true;
+                                    }
                                 }
                             }
                         }
+                        self.triggers = triggers;
                     }
-                    self.triggers = triggers;
                 }
                 Event::Mouse(mouse_event) => {
                     let mut triggers = std::mem::take(&mut self.triggers);

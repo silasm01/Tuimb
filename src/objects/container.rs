@@ -186,6 +186,7 @@ impl Object for ContainerObject {
                 }
                 Ok(HandleReturn::None)
             }
+            ObjectCommand::GetFlow() => Ok(HandleReturn::Flow(self.flow)),
             ObjectCommand::SetBorder(border) => {
                 self.border = border;
                 Ok(HandleReturn::None)
@@ -205,6 +206,7 @@ impl Object for ContainerObject {
                 self.index = indexes;
                 Ok(HandleReturn::None)
             }
+            ObjectCommand::GetObjectCount() => Ok(HandleReturn::ObjectCount(self.content.len())),
             _ => Err(()),
         }
     }
