@@ -6,7 +6,7 @@ pub mod button;
 
 use super::TuiHandler;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Handle {
     pub indexes: Vec<usize>,
 }

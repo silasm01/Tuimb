@@ -1,6 +1,12 @@
-use crate::objects::{Handle, HandleReturn, Object, ObjectCommand};
+use crate::{
+    objects::{Handle, HandleReturn, Object, ObjectCommand},
+    Grid,
+};
 use crossterm::{cursor, execute};
-use std::io::{self};
+use std::{
+    collections::HashMap,
+    io::{self},
+};
 
 #[derive(PartialEq, Clone, Copy)]
 pub enum FlowDirection {
@@ -32,7 +38,7 @@ impl ContainerObject {
         })
     }
 
-    pub fn update_sizes(&mut self) {
+    pub fn update_sizes(&mut self, selectables_map: &mut Grid) {
         if self.spacing.is_empty() {
             self.spacing = vec![1];
         }
@@ -96,11 +102,17 @@ impl ContainerObject {
             obj.handle(ObjectCommand::SetSize(size)).unwrap();
             obj.handle(ObjectCommand::SetPosition(position)).unwrap();
 
+            if obj.is_selectable() {
+                let mut indexes = self.index.clone();
+                indexes.push(i);
+                selectables_map.cells.insert(position, Handle { indexes });
+            }
+
             if obj.as_any().is::<ContainerObject>() {
                 obj.as_any_mut()
                     .downcast_mut::<ContainerObject>()
                     .unwrap()
-                    .update_sizes();
+                    .update_sizes(selectables_map);
             }
         }
     }
